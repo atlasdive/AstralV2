@@ -29,6 +29,8 @@ public final class AstralCommand implements TabExecutor {
 
     private static final String SUBCOMMAND_STATS = "stats";
     private static final String SUBCOMMAND_GIVECORE = "givecore";
+    private static final String SUBCOMMAND_SETSTAT = "setstat";
+    private static final String SUBCOMMAND_RESETSTATS = "resetstats";
     private static final String SUBCOMMAND_ANOMALY = "anomaly";
     private static final String SUBCOMMAND_ANOMALY_REROLL = "anomaly-reroll";
     private static final String SUBCOMMAND_DUNGEON = "dungeon";
@@ -75,6 +77,12 @@ public final class AstralCommand implements TabExecutor {
         }
         if (SUBCOMMAND_GIVECORE.equals(subCommand)) {
             return handleGiveCore(sender);
+        }
+        if (SUBCOMMAND_SETSTAT.equals(subCommand)) {
+            return handleSetStat(sender, label, args);
+        }
+        if (SUBCOMMAND_RESETSTATS.equals(subCommand)) {
+            return handleResetStats(sender, label, args);
         }
         if (SUBCOMMAND_ANOMALY.equals(subCommand)) {
             sender.sendMessage(ChatColor.DARK_PURPLE + "現在の異常座標: "
@@ -351,6 +359,76 @@ public final class AstralCommand implements TabExecutor {
         return true;
     }
 
+    private boolean handleSetStat(CommandSender sender, String label, String[] args) {
+        if (!sender.hasPermission(ADMIN_PERMISSION)) {
+            sender.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
+            return true;
+        }
+        if (args.length < 4) {
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " setstat <player> <stat> <value>");
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[1]);
+        if (target == null) {
+            sender.sendMessage(ChatColor.RED + "対象プレイヤーが見つかりません（オンラインのみ対応）。");
+            return true;
+        }
+
+        double value;
+        try {
+            value = Double.parseDouble(args[3]);
+        } catch (NumberFormatException exception) {
+            sender.sendMessage(ChatColor.RED + "value は数値で指定してください。");
+            return true;
+        }
+
+        PlayerStats current = playerStatsService.getOrCreate(target.getUniqueId());
+        PlayerStats updated = applyStat(current, args[2], value);
+        if (updated == null) {
+            sender.sendMessage(ChatColor.RED + "stat は attack|defense|maxhealth|critchance|critdamage を指定してください。");
+            return true;
+        }
+
+        playerStatsService.set(target.getUniqueId(), updated);
+        sender.sendMessage(ChatColor.GREEN + "ステータスを更新しました: " + target.getName());
+        target.sendMessage(ChatColor.AQUA + "管理者によりステータスが更新されました。");
+        return true;
+    }
+
+    private boolean handleResetStats(CommandSender sender, String label, String[] args) {
+        if (!sender.hasPermission(ADMIN_PERMISSION)) {
+            sender.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " resetstats <player>");
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(args[1]);
+        if (target == null) {
+            sender.sendMessage(ChatColor.RED + "対象プレイヤーが見つかりません（オンラインのみ対応）。");
+            return true;
+        }
+
+        playerStatsService.set(target.getUniqueId(), PlayerStats.DEFAULT);
+        sender.sendMessage(ChatColor.GREEN + "ステータスを初期化しました: " + target.getName());
+        target.sendMessage(ChatColor.AQUA + "管理者によりステータスが初期化されました。");
+        return true;
+    }
+
+    private PlayerStats applyStat(PlayerStats current, String key, double value) {
+        return switch (key.toLowerCase(Locale.ROOT)) {
+            case "attack", "atk" -> current.withAttack(value);
+            case "defense", "def" -> current.withDefense(value);
+            case "maxhealth", "hp" -> current.withMaxHealth(value);
+            case "critchance", "crit" -> current.withCritChance(value);
+            case "critdamage", "critdmg" -> current.withCritDamage(value);
+            default -> null;
+        };
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
@@ -364,6 +442,8 @@ public final class AstralCommand implements TabExecutor {
 
             if (sender.hasPermission(ADMIN_PERMISSION)) {
                 candidates.add(SUBCOMMAND_GIVECORE);
+                candidates.add(SUBCOMMAND_SETSTAT);
+                candidates.add(SUBCOMMAND_RESETSTATS);
                 candidates.add(SUBCOMMAND_ANOMALY_REROLL);
                 candidates.add(SUBCOMMAND_DUNGEON_REROLL);
                 candidates.add(SUBCOMMAND_EVENT_REROLL);
