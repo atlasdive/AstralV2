@@ -5,6 +5,7 @@ import dev.astralv2.combat.DamageCalculator;
 import dev.astralv2.command.AstralCommand;
 import dev.astralv2.item.AstralItems;
 import dev.astralv2.item.AstralRecipeRegistrar;
+import dev.astralv2.stats.PlayerStatsRepository;
 import dev.astralv2.stats.PlayerStatsService;
 import dev.astralv2.world.DungeonGenerationService;
 import dev.astralv2.world.WorldAnomalyService;
@@ -19,10 +20,13 @@ public final class AstralPlugin extends JavaPlugin {
     private WorldAnomalyService worldAnomalyService;
     private DungeonGenerationService dungeonGenerationService;
     private WorldEventService worldEventService;
+    private PlayerStatsRepository playerStatsRepository;
 
     @Override
     public void onEnable() {
         playerStatsService = new PlayerStatsService();
+        playerStatsRepository = new PlayerStatsRepository(this);
+        playerStatsService.replaceAll(playerStatsRepository.load());
 
         AstralItems astralItems = new AstralItems(this);
         new AstralRecipeRegistrar(this, astralItems).registerAll();
@@ -53,6 +57,9 @@ public final class AstralPlugin extends JavaPlugin {
             worldAnomalyService.stop();
         }
         if (playerStatsService != null) {
+            if (playerStatsRepository != null) {
+                playerStatsRepository.save(playerStatsService.snapshot());
+            }
             playerStatsService.clearAll();
         }
         getLogger().info("AstralV2 plugin disabled.");
