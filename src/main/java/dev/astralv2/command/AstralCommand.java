@@ -3,6 +3,7 @@ package dev.astralv2.command;
 import dev.astralv2.item.AstralItems;
 import dev.astralv2.stats.PlayerStats;
 import dev.astralv2.stats.PlayerStatsService;
+import dev.astralv2.world.WorldAnomalyService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -15,20 +16,26 @@ import java.util.List;
 
 /**
  * /astral コマンド（初期実装）
- * - /astral stats : 自分のステータス表示
- * - /astral givecore : Astral Coreを受け取る（管理者向けデバッグ）
  */
 public final class AstralCommand implements TabExecutor {
 
     private static final String SUBCOMMAND_STATS = "stats";
     private static final String SUBCOMMAND_GIVECORE = "givecore";
+    private static final String SUBCOMMAND_ANOMALY = "anomaly";
+    private static final String SUBCOMMAND_ANOMALY_REROLL = "anomaly-reroll";
 
     private final PlayerStatsService playerStatsService;
     private final AstralItems astralItems;
+    private final WorldAnomalyService worldAnomalyService;
 
-    public AstralCommand(PlayerStatsService playerStatsService, AstralItems astralItems) {
+    public AstralCommand(
+        PlayerStatsService playerStatsService,
+        AstralItems astralItems,
+        WorldAnomalyService worldAnomalyService
+    ) {
         this.playerStatsService = playerStatsService;
         this.astralItems = astralItems;
+        this.worldAnomalyService = worldAnomalyService;
     }
 
     @Override
@@ -42,9 +49,22 @@ public final class AstralCommand implements TabExecutor {
         if (SUBCOMMAND_STATS.equals(subCommand)) {
             return handleStats(sender);
         }
-
         if (SUBCOMMAND_GIVECORE.equals(subCommand)) {
             return handleGiveCore(sender);
+        }
+        if (SUBCOMMAND_ANOMALY.equals(subCommand)) {
+            sender.sendMessage(ChatColor.DARK_PURPLE + "現在の異常座標: "
+                + ChatColor.LIGHT_PURPLE + worldAnomalyService.formatCurrentAnomaly());
+            return true;
+        }
+        if (SUBCOMMAND_ANOMALY_REROLL.equals(subCommand)) {
+            if (!sender.hasPermission("astral.admin")) {
+                sender.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
+                return true;
+            }
+            worldAnomalyService.rerollAnomaly();
+            sender.sendMessage(ChatColor.LIGHT_PURPLE + "異常座標を再生成しました。");
+            return true;
         }
 
         sendUsage(sender, label);
@@ -86,7 +106,12 @@ public final class AstralCommand implements TabExecutor {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            List<String> candidates = List.of(SUBCOMMAND_STATS, SUBCOMMAND_GIVECORE);
+            List<String> candidates = List.of(
+                SUBCOMMAND_STATS,
+                SUBCOMMAND_GIVECORE,
+                SUBCOMMAND_ANOMALY,
+                SUBCOMMAND_ANOMALY_REROLL
+            );
             String typed = args[0].toLowerCase();
             List<String> result = new ArrayList<>();
             for (String candidate : candidates) {
@@ -100,6 +125,6 @@ public final class AstralCommand implements TabExecutor {
     }
 
     private void sendUsage(CommandSender sender, String label) {
-        sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " <stats|givecore>");
+        sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " <stats|givecore|anomaly|anomaly-reroll>");
     }
 }
