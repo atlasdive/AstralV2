@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * /astral コマンド（初期実装）
@@ -52,7 +53,7 @@ public final class AstralCommand implements TabExecutor {
             return true;
         }
 
-        String subCommand = args[0].toLowerCase();
+        String subCommand = args[0].toLowerCase(Locale.ROOT);
         if (SUBCOMMAND_STATS.equals(subCommand)) {
             return handleStats(sender);
         }
@@ -130,17 +131,17 @@ public final class AstralCommand implements TabExecutor {
         if (args.length == 1) {
             List<String> candidates = new ArrayList<>(List.of(
                 SUBCOMMAND_STATS,
-                SUBCOMMAND_GIVECORE,
                 SUBCOMMAND_ANOMALY,
                 SUBCOMMAND_DUNGEON
             ));
 
             if (sender.hasPermission(ADMIN_PERMISSION)) {
+                candidates.add(SUBCOMMAND_GIVECORE);
                 candidates.add(SUBCOMMAND_ANOMALY_REROLL);
                 candidates.add(SUBCOMMAND_DUNGEON_REROLL);
             }
 
-            String typed = args[0].toLowerCase();
+            String typed = args[0].toLowerCase(Locale.ROOT);
             List<String> result = new ArrayList<>();
             for (String candidate : candidates) {
                 if (candidate.startsWith(typed)) {
@@ -154,10 +155,10 @@ public final class AstralCommand implements TabExecutor {
 
     private void sendUsage(CommandSender sender, String label) {
         sender.sendMessage(ChatColor.YELLOW
-            + "Usage: /" + label + " <stats|givecore|anomaly|dungeon>");
+            + "Usage: /" + label + " <stats|anomaly|dungeon>");
         if (sender.hasPermission(ADMIN_PERMISSION)) {
             sender.sendMessage(ChatColor.GRAY
-                + "Admin: /" + label + " <anomaly-reroll|dungeon-reroll>");
+                + "Admin: /" + label + " <givecore|anomaly-reroll|dungeon-reroll>");
         }
     }
 }
