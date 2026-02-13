@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+}
+
+group = 'dev.astralv2'
+version = '0.1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.purpurmc.org/snapshots' }
+}
+
+dependencies {
+    compileOnly 'org.purpurmc.purpur:purpur-api:1.21.1-R0.1-SNAPSHOT'
+}
+
+tasks.named('jar') {
+    archiveBaseName = 'AstralV2'
+}
+
+tasks.named('processResources') {
+    filesMatching('plugin.yml') {
+        expand(version: project.version)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
