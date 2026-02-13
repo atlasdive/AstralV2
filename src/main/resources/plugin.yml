@@ -1,0 +1,15 @@
+name: AstralV2
+version: ${version}
+main: dev.astralv2.AstralPlugin
+api-version: '1.21'
+authors: [Astral]
+description: OpenWorld RPG core plugin for Astral project.
+commands:
+  astral:
+    description: Astral main command.
+    usage: /<command> <stats|givecore|anomaly|anomaly-reroll>
+    aliases: [as]
+permissions:
+  astral.admin:
+    description: Astral admin commands.
+    default: op
