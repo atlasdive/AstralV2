@@ -7,7 +7,7 @@ description: OpenWorld RPG core plugin for Astral project.
 commands:
   astral:
     description: Astral main command.
-    usage: /<command> <stats|givecore|anomaly|anomaly-reroll>
+    usage: /<command> <stats|givecore|anomaly|anomaly-reroll|dungeon|dungeon-reroll>
     aliases: [as]
 permissions:
   astral.admin:

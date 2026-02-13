@@ -6,6 +6,7 @@ import dev.astralv2.command.AstralCommand;
 import dev.astralv2.item.AstralItems;
 import dev.astralv2.item.AstralRecipeRegistrar;
 import dev.astralv2.stats.PlayerStatsService;
+import dev.astralv2.world.DungeonGenerationService;
 import dev.astralv2.world.WorldAnomalyService;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
@@ -25,7 +26,10 @@ public final class AstralPlugin extends JavaPlugin {
         WorldAnomalyService worldAnomalyService = new WorldAnomalyService(this);
         worldAnomalyService.start();
 
-        registerCommands(astralItems, worldAnomalyService);
+        DungeonGenerationService dungeonGenerationService = new DungeonGenerationService(this, worldAnomalyService);
+        dungeonGenerationService.start();
+
+        registerCommands(astralItems, worldAnomalyService, dungeonGenerationService);
         registerListeners();
         getLogger().info("AstralV2 plugin enabled. Player stats service initialized.");
     }
@@ -42,13 +46,22 @@ public final class AstralPlugin extends JavaPlugin {
         return playerStatsService;
     }
 
-    private void registerCommands(AstralItems astralItems, WorldAnomalyService worldAnomalyService) {
+    private void registerCommands(
+        AstralItems astralItems,
+        WorldAnomalyService worldAnomalyService,
+        DungeonGenerationService dungeonGenerationService
+    ) {
         PluginCommand astralCommand = getCommand("astral");
         if (astralCommand == null) {
             throw new IllegalStateException("Command 'astral' is not defined in plugin.yml");
         }
 
-        AstralCommand executor = new AstralCommand(playerStatsService, astralItems, worldAnomalyService);
+        AstralCommand executor = new AstralCommand(
+            playerStatsService,
+            astralItems,
+            worldAnomalyService,
+            dungeonGenerationService
+        );
         astralCommand.setExecutor(executor);
         astralCommand.setTabCompleter(executor);
     }
