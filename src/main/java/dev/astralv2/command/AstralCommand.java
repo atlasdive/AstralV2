@@ -3,6 +3,7 @@ package dev.astralv2.command;
 import dev.astralv2.item.AstralItems;
 import dev.astralv2.stats.PlayerStats;
 import dev.astralv2.stats.PlayerStatsService;
+import dev.astralv2.world.DungeonGenerationService;
 import dev.astralv2.world.WorldAnomalyService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -23,19 +24,25 @@ public final class AstralCommand implements TabExecutor {
     private static final String SUBCOMMAND_GIVECORE = "givecore";
     private static final String SUBCOMMAND_ANOMALY = "anomaly";
     private static final String SUBCOMMAND_ANOMALY_REROLL = "anomaly-reroll";
+    private static final String SUBCOMMAND_DUNGEON = "dungeon";
+    private static final String SUBCOMMAND_DUNGEON_REROLL = "dungeon-reroll";
+    private static final String ADMIN_PERMISSION = "astral.admin";
 
     private final PlayerStatsService playerStatsService;
     private final AstralItems astralItems;
     private final WorldAnomalyService worldAnomalyService;
+    private final DungeonGenerationService dungeonGenerationService;
 
     public AstralCommand(
         PlayerStatsService playerStatsService,
         AstralItems astralItems,
-        WorldAnomalyService worldAnomalyService
+        WorldAnomalyService worldAnomalyService,
+        DungeonGenerationService dungeonGenerationService
     ) {
         this.playerStatsService = playerStatsService;
         this.astralItems = astralItems;
         this.worldAnomalyService = worldAnomalyService;
+        this.dungeonGenerationService = dungeonGenerationService;
     }
 
     @Override
@@ -58,12 +65,27 @@ public final class AstralCommand implements TabExecutor {
             return true;
         }
         if (SUBCOMMAND_ANOMALY_REROLL.equals(subCommand)) {
-            if (!sender.hasPermission("astral.admin")) {
+            if (!sender.hasPermission(ADMIN_PERMISSION)) {
                 sender.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
                 return true;
             }
             worldAnomalyService.rerollAnomaly();
+            dungeonGenerationService.rerollDungeonEntrance();
             sender.sendMessage(ChatColor.LIGHT_PURPLE + "異常座標を再生成しました。");
+            return true;
+        }
+        if (SUBCOMMAND_DUNGEON.equals(subCommand)) {
+            sender.sendMessage(ChatColor.DARK_AQUA + "現在のダンジョン入口候補: "
+                + ChatColor.AQUA + dungeonGenerationService.formatCurrentDungeonEntrance());
+            return true;
+        }
+        if (SUBCOMMAND_DUNGEON_REROLL.equals(subCommand)) {
+            if (!sender.hasPermission(ADMIN_PERMISSION)) {
+                sender.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
+                return true;
+            }
+            dungeonGenerationService.rerollDungeonEntrance();
+            sender.sendMessage(ChatColor.AQUA + "ダンジョン入口候補を再生成しました。");
             return true;
         }
 
@@ -93,7 +115,7 @@ public final class AstralCommand implements TabExecutor {
             return true;
         }
 
-        if (!player.hasPermission("astral.admin")) {
+        if (!player.hasPermission(ADMIN_PERMISSION)) {
             player.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
             return true;
         }
@@ -106,12 +128,18 @@ public final class AstralCommand implements TabExecutor {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            List<String> candidates = List.of(
+            List<String> candidates = new ArrayList<>(List.of(
                 SUBCOMMAND_STATS,
                 SUBCOMMAND_GIVECORE,
                 SUBCOMMAND_ANOMALY,
-                SUBCOMMAND_ANOMALY_REROLL
-            );
+                SUBCOMMAND_DUNGEON
+            ));
+
+            if (sender.hasPermission(ADMIN_PERMISSION)) {
+                candidates.add(SUBCOMMAND_ANOMALY_REROLL);
+                candidates.add(SUBCOMMAND_DUNGEON_REROLL);
+            }
+
             String typed = args[0].toLowerCase();
             List<String> result = new ArrayList<>();
             for (String candidate : candidates) {
@@ -125,6 +153,11 @@ public final class AstralCommand implements TabExecutor {
     }
 
     private void sendUsage(CommandSender sender, String label) {
-        sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " <stats|givecore|anomaly|anomaly-reroll>");
+        sender.sendMessage(ChatColor.YELLOW
+            + "Usage: /" + label + " <stats|givecore|anomaly|dungeon>");
+        if (sender.hasPermission(ADMIN_PERMISSION)) {
+            sender.sendMessage(ChatColor.GRAY
+                + "Admin: /" + label + " <anomaly-reroll|dungeon-reroll>");
+        }
     }
 }
