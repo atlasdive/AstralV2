@@ -3,6 +3,8 @@ package dev.astralv2;
 import dev.astralv2.combat.CombatListener;
 import dev.astralv2.combat.DamageCalculator;
 import dev.astralv2.command.AstralCommand;
+import dev.astralv2.item.AstralItems;
+import dev.astralv2.item.AstralRecipeRegistrar;
 import dev.astralv2.stats.PlayerStatsService;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
@@ -15,7 +17,11 @@ public final class AstralPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         playerStatsService = new PlayerStatsService();
-        registerCommands();
+
+        AstralItems astralItems = new AstralItems(this);
+        new AstralRecipeRegistrar(this, astralItems).registerAll();
+
+        registerCommands(astralItems);
         registerListeners();
         getLogger().info("AstralV2 plugin enabled. Player stats service initialized.");
     }
@@ -32,13 +38,13 @@ public final class AstralPlugin extends JavaPlugin {
         return playerStatsService;
     }
 
-    private void registerCommands() {
+    private void registerCommands(AstralItems astralItems) {
         PluginCommand astralCommand = getCommand("astral");
         if (astralCommand == null) {
             throw new IllegalStateException("Command 'astral' is not defined in plugin.yml");
         }
 
-        AstralCommand executor = new AstralCommand(playerStatsService);
+        AstralCommand executor = new AstralCommand(playerStatsService, astralItems);
         astralCommand.setExecutor(executor);
         astralCommand.setTabCompleter(executor);
     }
