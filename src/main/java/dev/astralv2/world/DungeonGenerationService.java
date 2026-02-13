@@ -16,6 +16,7 @@ import java.util.Random;
 public final class DungeonGenerationService {
 
     private static final int ENTRANCE_OFFSET_RADIUS = 80;
+    private static final long REROLL_PERIOD_TICKS = 20L * 60L * 10L;
 
     private final JavaPlugin plugin;
     private final WorldAnomalyService worldAnomalyService;
@@ -32,8 +33,8 @@ public final class DungeonGenerationService {
         stop();
         rerollDungeonEntrance();
 
-        long periodTicks = 20L * 60L * 10L; // 10分
-        rerollTask = Bukkit.getScheduler().runTaskTimer(plugin, this::rerollDungeonEntrance, periodTicks, periodTicks);
+        rerollTask = Bukkit.getScheduler()
+            .runTaskTimer(plugin, this::rerollDungeonEntrance, REROLL_PERIOD_TICKS, REROLL_PERIOD_TICKS);
     }
 
     public void stop() {
@@ -52,6 +53,12 @@ public final class DungeonGenerationService {
 
         Location base = anomaly.get();
         World world = base.getWorld();
+        if (world == null) {
+            currentDungeonEntrance = null;
+            plugin.getLogger().warning("Anomaly world is unavailable. Skipping dungeon entrance reroll.");
+            return;
+        }
+
         int x = base.getBlockX() + random.nextInt(ENTRANCE_OFFSET_RADIUS * 2 + 1) - ENTRANCE_OFFSET_RADIUS;
         int z = base.getBlockZ() + random.nextInt(ENTRANCE_OFFSET_RADIUS * 2 + 1) - ENTRANCE_OFFSET_RADIUS;
         int y = world.getHighestBlockYAt(x, z) + 1;
@@ -70,7 +77,9 @@ public final class DungeonGenerationService {
     }
 
     private String formatLocation(Location location) {
-        return location.getWorld().getName() + " ("
+        World world = location.getWorld();
+        String worldName = world == null ? "unknown" : world.getName();
+        return worldName + " ("
             + location.getBlockX() + ", "
             + location.getBlockY() + ", "
             + location.getBlockZ() + ")";

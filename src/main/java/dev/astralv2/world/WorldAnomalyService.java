@@ -17,6 +17,7 @@ import java.util.Random;
 public final class WorldAnomalyService {
 
     private static final int DEFAULT_RADIUS = 2500;
+    private static final long REROLL_PERIOD_TICKS = 20L * 60L * 10L;
 
     private final JavaPlugin plugin;
     private final Random random = new Random();
@@ -31,8 +32,8 @@ public final class WorldAnomalyService {
         stop();
         rerollAnomaly();
 
-        long periodTicks = 20L * 60L * 10L; // 10分
-        rerollTask = Bukkit.getScheduler().runTaskTimer(plugin, this::rerollAnomaly, periodTicks, periodTicks);
+        rerollTask = Bukkit.getScheduler()
+            .runTaskTimer(plugin, this::rerollAnomaly, REROLL_PERIOD_TICKS, REROLL_PERIOD_TICKS);
     }
 
     public void stop() {
@@ -77,7 +78,9 @@ public final class WorldAnomalyService {
     }
 
     private String formatLocation(Location location) {
-        return location.getWorld().getName() + " ("
+        World world = location.getWorld();
+        String worldName = world == null ? "unknown" : world.getName();
+        return worldName + " ("
             + location.getBlockX() + ", "
             + location.getBlockY() + ", "
             + location.getBlockZ() + ")";
