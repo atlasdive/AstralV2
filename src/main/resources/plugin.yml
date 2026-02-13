@@ -1,0 +1,6 @@
+name: AstralV2
+version: ${version}
+main: dev.astralv2.AstralPlugin
+api-version: '1.21'
+authors: [Astral]
+description: OpenWorld RPG core plugin for Astral project.
