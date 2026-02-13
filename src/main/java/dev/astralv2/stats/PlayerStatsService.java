@@ -1,12 +1,13 @@
 package dev.astralv2.stats;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * プレイヤーごとのステータス保持（インメモリ）。
- * 保存層は後続タスクで分離実装する。
+ * 永続化自体は PlayerStatsRepository が担当する。
  */
 public final class PlayerStatsService {
 
@@ -27,4 +28,15 @@ public final class PlayerStatsService {
     public void clearAll() {
         statsByPlayer.clear();
     }
+
+    public Map<UUID, PlayerStats> snapshot() {
+        return new HashMap<>(statsByPlayer);
+    }
+
+    public void replaceAll(Map<UUID, PlayerStats> loadedStats) {
+        statsByPlayer.clear();
+        statsByPlayer.putAll(loadedStats);
+    }
 }
+
+
