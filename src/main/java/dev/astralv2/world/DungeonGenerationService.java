@@ -5,6 +5,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Optional;
 import java.util.Random;
@@ -20,6 +21,7 @@ public final class DungeonGenerationService {
     private final WorldAnomalyService worldAnomalyService;
     private final Random random = new Random();
     private Location currentDungeonEntrance;
+    private BukkitTask rerollTask;
 
     public DungeonGenerationService(JavaPlugin plugin, WorldAnomalyService worldAnomalyService) {
         this.plugin = plugin;
@@ -27,10 +29,18 @@ public final class DungeonGenerationService {
     }
 
     public void start() {
+        stop();
         rerollDungeonEntrance();
 
         long periodTicks = 20L * 60L * 10L; // 10分
-        Bukkit.getScheduler().runTaskTimer(plugin, this::rerollDungeonEntrance, periodTicks, periodTicks);
+        rerollTask = Bukkit.getScheduler().runTaskTimer(plugin, this::rerollDungeonEntrance, periodTicks, periodTicks);
+    }
+
+    public void stop() {
+        if (rerollTask != null) {
+            rerollTask.cancel();
+            rerollTask = null;
+        }
     }
 
     public void rerollDungeonEntrance() {

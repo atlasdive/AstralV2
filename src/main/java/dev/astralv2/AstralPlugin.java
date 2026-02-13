@@ -15,6 +15,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class AstralPlugin extends JavaPlugin {
 
     private PlayerStatsService playerStatsService;
+    private WorldAnomalyService worldAnomalyService;
+    private DungeonGenerationService dungeonGenerationService;
 
     @Override
     public void onEnable() {
@@ -23,10 +25,10 @@ public final class AstralPlugin extends JavaPlugin {
         AstralItems astralItems = new AstralItems(this);
         new AstralRecipeRegistrar(this, astralItems).registerAll();
 
-        WorldAnomalyService worldAnomalyService = new WorldAnomalyService(this);
+        worldAnomalyService = new WorldAnomalyService(this);
         worldAnomalyService.start();
 
-        DungeonGenerationService dungeonGenerationService = new DungeonGenerationService(this, worldAnomalyService);
+        dungeonGenerationService = new DungeonGenerationService(this, worldAnomalyService);
         dungeonGenerationService.start();
 
         registerCommands(astralItems, worldAnomalyService, dungeonGenerationService);
@@ -36,6 +38,12 @@ public final class AstralPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (dungeonGenerationService != null) {
+            dungeonGenerationService.stop();
+        }
+        if (worldAnomalyService != null) {
+            worldAnomalyService.stop();
+        }
         if (playerStatsService != null) {
             playerStatsService.clearAll();
         }
