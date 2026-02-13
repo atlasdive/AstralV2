@@ -5,6 +5,7 @@ import dev.astralv2.stats.PlayerStats;
 import dev.astralv2.stats.PlayerStatsService;
 import dev.astralv2.world.DungeonGenerationService;
 import dev.astralv2.world.WorldAnomalyService;
+import dev.astralv2.world.WorldEventService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -27,23 +28,28 @@ public final class AstralCommand implements TabExecutor {
     private static final String SUBCOMMAND_ANOMALY_REROLL = "anomaly-reroll";
     private static final String SUBCOMMAND_DUNGEON = "dungeon";
     private static final String SUBCOMMAND_DUNGEON_REROLL = "dungeon-reroll";
+    private static final String SUBCOMMAND_EVENT = "event";
+    private static final String SUBCOMMAND_EVENT_REROLL = "event-reroll";
     private static final String ADMIN_PERMISSION = "astral.admin";
 
     private final PlayerStatsService playerStatsService;
     private final AstralItems astralItems;
     private final WorldAnomalyService worldAnomalyService;
     private final DungeonGenerationService dungeonGenerationService;
+    private final WorldEventService worldEventService;
 
     public AstralCommand(
         PlayerStatsService playerStatsService,
         AstralItems astralItems,
         WorldAnomalyService worldAnomalyService,
-        DungeonGenerationService dungeonGenerationService
+        DungeonGenerationService dungeonGenerationService,
+        WorldEventService worldEventService
     ) {
         this.playerStatsService = playerStatsService;
         this.astralItems = astralItems;
         this.worldAnomalyService = worldAnomalyService;
         this.dungeonGenerationService = dungeonGenerationService;
+        this.worldEventService = worldEventService;
     }
 
     @Override
@@ -90,6 +96,21 @@ public final class AstralCommand implements TabExecutor {
             return true;
         }
 
+        if (SUBCOMMAND_EVENT.equals(subCommand)) {
+            sender.sendMessage(ChatColor.DARK_GREEN + "現在のワールドイベント: "
+                + ChatColor.GREEN + worldEventService.formatCurrentEvent());
+            return true;
+        }
+        if (SUBCOMMAND_EVENT_REROLL.equals(subCommand)) {
+            if (!sender.hasPermission(ADMIN_PERMISSION)) {
+                sender.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
+                return true;
+            }
+            worldEventService.rerollEvent();
+            sender.sendMessage(ChatColor.GREEN + "ワールドイベントを再生成しました。");
+            return true;
+        }
+
         sendUsage(sender, label);
         return true;
     }
@@ -132,13 +153,15 @@ public final class AstralCommand implements TabExecutor {
             List<String> candidates = new ArrayList<>(List.of(
                 SUBCOMMAND_STATS,
                 SUBCOMMAND_ANOMALY,
-                SUBCOMMAND_DUNGEON
+                SUBCOMMAND_DUNGEON,
+                SUBCOMMAND_EVENT
             ));
 
             if (sender.hasPermission(ADMIN_PERMISSION)) {
                 candidates.add(SUBCOMMAND_GIVECORE);
                 candidates.add(SUBCOMMAND_ANOMALY_REROLL);
                 candidates.add(SUBCOMMAND_DUNGEON_REROLL);
+                candidates.add(SUBCOMMAND_EVENT_REROLL);
             }
 
             String typed = args[0].toLowerCase(Locale.ROOT);
@@ -155,10 +178,10 @@ public final class AstralCommand implements TabExecutor {
 
     private void sendUsage(CommandSender sender, String label) {
         sender.sendMessage(ChatColor.YELLOW
-            + "Usage: /" + label + " <stats|anomaly|dungeon>");
+            + "Usage: /" + label + " <stats|anomaly|dungeon|event>");
         if (sender.hasPermission(ADMIN_PERMISSION)) {
             sender.sendMessage(ChatColor.GRAY
-                + "Admin: /" + label + " <givecore|anomaly-reroll|dungeon-reroll>");
+                + "Admin: /" + label + " <givecore|anomaly-reroll|dungeon-reroll|event-reroll>");
         }
     }
 }
