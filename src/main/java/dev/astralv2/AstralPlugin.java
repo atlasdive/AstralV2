@@ -1,6 +1,8 @@
 package dev.astralv2;
 
+import dev.astralv2.command.AstralCommand;
 import dev.astralv2.stats.PlayerStatsService;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class AstralPlugin extends JavaPlugin {
@@ -10,6 +12,7 @@ public final class AstralPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         playerStatsService = new PlayerStatsService();
+        registerCommands();
         getLogger().info("AstralV2 plugin enabled. Player stats service initialized.");
     }
 
@@ -23,5 +26,16 @@ public final class AstralPlugin extends JavaPlugin {
 
     public PlayerStatsService getPlayerStatsService() {
         return playerStatsService;
+    }
+
+    private void registerCommands() {
+        PluginCommand astralCommand = getCommand("astral");
+        if (astralCommand == null) {
+            throw new IllegalStateException("Command 'astral' is not defined in plugin.yml");
+        }
+
+        AstralCommand executor = new AstralCommand(playerStatsService);
+        astralCommand.setExecutor(executor);
+        astralCommand.setTabCompleter(executor);
     }
 }
