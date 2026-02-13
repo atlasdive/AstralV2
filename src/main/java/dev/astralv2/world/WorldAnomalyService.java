@@ -5,7 +5,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -15,27 +17,44 @@ import java.util.Random;
 public final class WorldAnomalyService {
 
     private static final int DEFAULT_RADIUS = 2500;
+    private static final long REROLL_PERIOD_TICKS = 20L * 60L * 10L;
 
     private final JavaPlugin plugin;
     private final Random random = new Random();
     private Location currentAnomaly;
+    private BukkitTask rerollTask;
 
     public WorldAnomalyService(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 
     public void start() {
+        stop();
         rerollAnomaly();
 
-        long periodTicks = 20L * 60L * 10L; // 10分
-        Bukkit.getScheduler().runTaskTimer(plugin, this::rerollAnomaly, periodTicks, periodTicks);
+        rerollTask = Bukkit.getScheduler()
+            .runTaskTimer(plugin, this::rerollAnomaly, REROLL_PERIOD_TICKS, REROLL_PERIOD_TICKS);
+    }
+
+    public void stop() {
+        if (rerollTask != null) {
+            rerollTask.cancel();
+            rerollTask = null;
+        }
     }
 
     public void rerollAnomaly() {
-        World world = Bukkit.getWorlds().stream()
+        List<World> worlds = Bukkit.getWorlds();
+        if (worlds.isEmpty()) {
+            currentAnomaly = null;
+            plugin.getLogger().warning("No worlds are loaded. Skipping anomaly reroll.");
+            return;
+        }
+
+        World world = worlds.stream()
             .filter(w -> w.getEnvironment() == World.Environment.NORMAL)
             .findFirst()
-            .orElse(Bukkit.getWorlds().getFirst());
+            .orElse(worlds.getFirst());
 
         int x = random.nextInt(DEFAULT_RADIUS * 2 + 1) - DEFAULT_RADIUS;
         int z = random.nextInt(DEFAULT_RADIUS * 2 + 1) - DEFAULT_RADIUS;
@@ -59,7 +78,9 @@ public final class WorldAnomalyService {
     }
 
     private String formatLocation(Location location) {
-        return location.getWorld().getName() + " ("
+        World world = location.getWorld();
+        String worldName = world == null ? "unknown" : world.getName();
+        return worldName + " ("
             + location.getBlockX() + ", "
             + location.getBlockY() + ", "
             + location.getBlockZ() + ")";
