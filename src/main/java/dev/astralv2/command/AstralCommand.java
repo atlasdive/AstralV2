@@ -33,6 +33,8 @@ public final class AstralCommand implements TabExecutor {
     private static final String SUBCOMMAND_DUNGEON_REROLL = "dungeon-reroll";
     private static final String SUBCOMMAND_EVENT = "event";
     private static final String SUBCOMMAND_EVENT_REROLL = "event-reroll";
+    private static final String SUBCOMMAND_STATSET = "statset";
+    private static final String SUBCOMMAND_STATRESET = "statreset";
     private static final String ADMIN_PERMISSION = "astral.admin";
 
     private final PlayerStatsService playerStatsService;
@@ -119,8 +121,81 @@ public final class AstralCommand implements TabExecutor {
             sender.sendMessage(ChatColor.GREEN + "ワールドイベントを再生成しました。");
             return true;
         }
+        if (SUBCOMMAND_STATSET.equals(subCommand)) {
+            return handleStatSet(sender, args);
+        }
+        if (SUBCOMMAND_STATRESET.equals(subCommand)) {
+            return handleStatReset(sender);
+        }
 
         sendUsage(sender, label);
+        return true;
+    }
+
+    private boolean handleStatSet(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + "このコマンドはプレイヤーのみ実行できます。");
+            return true;
+        }
+        if (!player.hasPermission(ADMIN_PERMISSION)) {
+            player.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
+            return true;
+        }
+        if (args.length < 3) {
+            player.sendMessage(ChatColor.YELLOW + "Usage: /astral statset <atk|def|maxhp|critchance|critdamage> <value>");
+            return true;
+        }
+
+        String statName = args[1].toLowerCase(Locale.ROOT);
+        double value;
+        try {
+            value = Double.parseDouble(args[2]);
+        } catch (NumberFormatException exception) {
+            player.sendMessage(ChatColor.RED + "値は数値で指定してください。");
+            return true;
+        }
+
+        PlayerStats current = playerStatsService.getOrCreate(player.getUniqueId());
+        PlayerStats updated;
+
+        switch (statName) {
+            case "atk":
+                updated = current.withAttack(Math.max(0.0, value));
+                break;
+            case "def":
+                updated = current.withDefense(Math.max(0.0, value));
+                break;
+            case "maxhp":
+                updated = current.withMaxHealth(Math.max(1.0, value));
+                break;
+            case "critchance":
+                updated = current.withCritChance(Math.max(0.0, Math.min(1.0, value)));
+                break;
+            case "critdamage":
+                updated = current.withCritDamage(Math.max(1.0, value));
+                break;
+            default:
+                player.sendMessage(ChatColor.RED + "不明なステータスです。atk/def/maxhp/critchance/critdamage から選んでください。");
+                return true;
+        }
+
+        playerStatsService.set(player.getUniqueId(), updated);
+        player.sendMessage(ChatColor.GREEN + "ステータスを更新しました: " + ChatColor.WHITE + statName + " = " + value);
+        return true;
+    }
+
+    private boolean handleStatReset(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + "このコマンドはプレイヤーのみ実行できます。");
+            return true;
+        }
+        if (!player.hasPermission(ADMIN_PERMISSION)) {
+            player.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
+            return true;
+        }
+
+        playerStatsService.set(player.getUniqueId(), PlayerStats.DEFAULT);
+        player.sendMessage(ChatColor.GREEN + "自分のステータスをデフォルト値にリセットしました。");
         return true;
     }
 
@@ -243,6 +318,8 @@ public final class AstralCommand implements TabExecutor {
                 candidates.add(SUBCOMMAND_ANOMALY_REROLL);
                 candidates.add(SUBCOMMAND_DUNGEON_REROLL);
                 candidates.add(SUBCOMMAND_EVENT_REROLL);
+                candidates.add(SUBCOMMAND_STATSET);
+                candidates.add(SUBCOMMAND_STATRESET);
             }
 
             return filterByPrefix(candidates, args[0]);
@@ -259,6 +336,21 @@ public final class AstralCommand implements TabExecutor {
         if (args.length == 3 && sender.hasPermission(ADMIN_PERMISSION)
             && SUBCOMMAND_SETSTAT.equalsIgnoreCase(args[0])) {
             return filterByPrefix(List.of("attack", "defense", "maxhealth", "critchance", "critdamage"), args[2]);
+        }
+        if (args.length == 2 && SUBCOMMAND_STATSET.equalsIgnoreCase(args[0])) {
+            if (!sender.hasPermission(ADMIN_PERMISSION)) {
+                return Collections.emptyList();
+            }
+
+            List<String> stats = List.of("atk", "def", "maxhp", "critchance", "critdamage");
+            String typed = args[1].toLowerCase(Locale.ROOT);
+            List<String> result = new ArrayList<>();
+            for (String stat : stats) {
+                if (stat.startsWith(typed)) {
+                    result.add(stat);
+                }
+            }
+            return result;
         }
 
         return Collections.emptyList();
@@ -280,8 +372,7 @@ public final class AstralCommand implements TabExecutor {
             + "Usage: /" + label + " <stats|anomaly|dungeon|event>");
         if (sender.hasPermission(ADMIN_PERMISSION)) {
             sender.sendMessage(ChatColor.GRAY
-                + "Admin: /" + label
-                + " <givecore|setstat|resetstats|anomaly-reroll|dungeon-reroll|event-reroll>");
+                + "Admin: /" + label + " <givecore|anomaly-reroll|dungeon-reroll|event-reroll|statset|statreset>");
         }
     }
 }
